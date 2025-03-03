@@ -6,7 +6,8 @@ const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const session = require('express-session'); // Import express-session
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000; // Use PORT from environment, fallback to 3000 for local testing
+
 
 // Middleware to parse incoming JSON data
 app.use(express.json());
