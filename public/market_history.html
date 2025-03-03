@@ -28,6 +28,9 @@
     .navbar a:hover {
       background-color: #575757;
     }
+    .table-container {
+      overflow-x: auto;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -55,34 +58,17 @@
     button:hover {
       background-color: #d32f2f;
     }
-    
-    
-* {
-  box-sizing: border-box;
-}
-
-@media (max-width: 768px) {
-  body {
-    padding: 10px;
-    font-size: 14px; /* Adjust font size if needed */
-  }
-  
-  /* You can also target other elements here for mobile adjustments */
-  .container {
-    width: 100%;
-    padding: 0;
-  }
-
-  /* Example for images */
-  img {
-    max-width: 100%;
-    height: auto;
-  }
-}
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      .table-container {
+        overflow-x: auto;
+      }
+    }
   </style>
 </head>
 <body>
-  <!-- Navigation Bar -->
   <div class="navbar">
     <a href="sauce-inventory-tracker.html">⬅️ Back</a>
     <a href="market_history.html">Market History</a>
@@ -90,54 +76,69 @@
   </div>
 
   <h1>Market History</h1>
-  <table id="marketHistoryTable">
-    <thead>
-      <tr>
-        <th>Market Name</th>
-        <th>Date</th>
-        <th>Total Bottles Sold</th>
-        <th>Total Sales Amount</th>
-        <th>Salesperson</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Data will be populated dynamically -->
-    </tbody>
-  </table>
-
-  <!-- Clear Market History Button -->
+  <div class="table-container">
+    <table id="marketHistoryTable">
+      <thead>
+        <tr>
+          <th>Market Name</th>
+          <th>Date</th>
+          <th>Total Bottles Sold</th>
+          <th>Total Sales Amount</th>
+          <th>Salesperson</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Data will be populated dynamically -->
+      </tbody>
+    </table>
+  </div>
+  
   <button onclick="clearMarketHistory()">Clear Market History</button>
 
   <script>
-    // Function to populate the table with market history data
-    function populateTable() {
-      const marketHistory = JSON.parse(localStorage.getItem("marketHistory")) || [];
-      const tableBody = document.querySelector("#marketHistoryTable tbody");
-      tableBody.innerHTML = ""; // Clear existing rows
+ function formatDate(dateString) {
+  const options = { day: 'numeric', month: 'short', year: 'numeric' };
+  const date = new Date(dateString).toLocaleDateString('en-GB', options); // Use 'en-GB' for consistent formatting
+  // Rearrange the parts to match "5 Mar 2025"
+  const [day, month, year] = date.split(' ');
+  return `${day} ${month} ${year}`;
+}
 
-      marketHistory.forEach((entry) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${entry.marketName}</td>
-          <td>${entry.marketDate}</td>
-          <td>${entry.totalBottles}</td>
-          <td>R${entry.totalSales}</td>
-          <td>${entry.marketSP || "Unknown"}</td> 
-        `;
-        tableBody.appendChild(row);
-      });
+    function populateTable() {
+      try {
+        const marketHistory = JSON.parse(localStorage.getItem("marketHistory")) || [];
+        const tableBody = document.querySelector("#marketHistoryTable tbody");
+        tableBody.innerHTML = "";
+        
+        if (marketHistory.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">No market history available</td></tr>`;
+          return;
+        }
+
+        marketHistory.forEach((entry) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${entry.marketName}</td>
+            <td>${formatDate(entry.marketDate)}</td>
+            <td>${entry.totalBottles}</td>
+            <td>R${parseFloat(entry.totalSales).toFixed(2)}</td>
+            <td>${entry.marketSP || "Unknown"}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+      } catch (error) {
+        console.error("Error accessing localStorage:", error);
+      }
     }
 
-    // Function to clear market history
     function clearMarketHistory() {
       if (confirm("Are you sure you want to clear all market history? This action cannot be undone.")) {
-        localStorage.removeItem("marketHistory"); // Remove market history from localStorage
-        populateTable(); // Refresh the table (it will be empty)
+        localStorage.removeItem("marketHistory");
+        populateTable();
         alert("Market history has been cleared.");
       }
     }
 
-    // Initial population of the table
     populateTable();
   </script>
 </body>

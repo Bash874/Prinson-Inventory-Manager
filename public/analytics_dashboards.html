@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Analytics Dashboard</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"> <!-- Add FontAwesome for clock icon -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -74,150 +75,90 @@
     button:hover {
       background-color: #45a049;
     }
-    .time-selector {
-      display: flex;
-      align-items: center;
-    }
-    .time-selector input {
-      width: 100px;
-    }
-    .time-selector button {
-      background-color: #f1f1f1;
-      border: 1px solid #ddd;
-      margin-left: 10px;
-      cursor: pointer;
-    }
-    .time-selector button:hover {
-      background-color: #ddd;
-    }
-
-    /* Time Picker Styles */
-    .time-picker-container {
+    
+    /* Time Selector Styles */
+    .time-container {
       position: relative;
     }
-    
-    .time-picker {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      background: white;
+    .time-inputs {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .time-input {
+      display: flex;
+      align-items: center;
       border: 1px solid #ddd;
       border-radius: 4px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      z-index: 100;
-      padding: 15px;
-      width: 300px;
-      display: none;
+      padding: 0;
+      overflow: hidden;
+      background-color: white;
     }
-    
-    .time-picker.active {
-      display: block;
-    }
-    
-    .time-picker-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-    
-    .time-selector-row {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 15px;
-    }
-    
-    .time-part {
+    .time-input select {
+      border: none;
+      padding: 8px 5px;
+      appearance: none;
+      background: transparent;
+      width: 60px;
       text-align: center;
     }
-    
-    .time-scroll {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    
-    .time-scroll button {
-      background: #f1f1f1;
-      border: 1px solid #ddd;
-      border-radius: 50%;
-      width: 30px;
-      height: 30px;
-      font-size: 16px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      margin: 2px 0;
-      padding: 0;
-    }
-    
-    .time-value {
-      padding: 5px 10px;
-      font-size: 18px;
-      margin: 5px 0;
-    }
-    
     .time-label {
-      font-size: 12px;
+      padding: 8px;
+      background-color: #f1f1f1;
+      font-weight: bold;
+    }
+    .time-separator {
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    /* Performance Overview Styles */
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .stat-card {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
       color: #666;
-      margin-top: 5px;
     }
-    
-    .time-picker-footer {
+    .stat-card p {
+      margin: 0;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+    }
+    .filters {
+      margin: 20px 0;
       display: flex;
-      justify-content: space-between;
-      margin-top: 15px;
+      gap: 15px;
     }
-    
-    .time-picker-footer button {
-      padding: 8px 12px;
+    .btn-group {
+      margin: 20px 0;
     }
-    
-    .time-picker-footer .apply-btn {
+    .btn-group button {
+      margin-right: 10px;
+      padding: 8px 16px;
+      background-color: #f1f1f1;
+      color: #333;
+    }
+    .btn-group button.active {
       background-color: #4CAF50;
-    }
-    
-    .time-picker-footer .cancel-btn {
-      background-color: #f44336;
-    }
-    
-    .am-pm-toggle {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-    }
-    
-    .am-pm-btn {
-      padding: 5px;
-      background: #f1f1f1;
-      border: 1px solid #ddd;
-      cursor: pointer;
-    }
-    
-    .am-pm-btn.active {
-      background: #4CAF50;
       color: white;
     }
-    
-@media (max-width: 768px) {
-  body {
-    padding: 10px;
-    font-size: 14px; /* Adjust font size if needed */
-  }
-  
-  /* You can also target other elements here for mobile adjustments */
-  .container {
-    width: 100%;
-    padding: 0;
-  }
-
-  /* Example for images */
-  img {
-    max-width: 100%;
-    height: auto;
-  }
-}
-    
+    .chart-container {
+      height: 400px;
+      margin: 20px 0;
+    }
   </style>
 </head>
 <body>
@@ -245,21 +186,57 @@
       </table>
     </div>
 
-    <!-- Market Strength Analysis -->
+    <!-- Performance Overview Section -->
     <div class="dashboard-section">
-      <h2>Market Strength Analysis</h2>
-      <table id="topMarkets">
-        <thead>
-          <tr>
-            <th>Market Name</th>
-            <th>Date</th>
-            <th>Bottles Sold</th>
-            <th>Sales Value</th>
-            <th>Salesperson</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+      <h2>Performance Overview</h2>
+      
+      <!-- Key Stats -->
+      <div class="stats-container">
+        <div class="stat-card">
+          <h3>Total Sales</h3>
+          <p id="totalSales">R0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Total Bottles</h3>
+          <p id="totalBottles">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Best Market</h3>
+          <p id="bestMarket">-</p>
+        </div>
+        <div class="stat-card">
+          <h3>Top Salesperson</h3>
+          <p id="topSalesperson">-</p>
+        </div>
+      </div>
+      
+      <!-- Filters -->
+      <div class="filters">
+        <select id="timeFilter">
+          <option value="all">All Time</option>
+          <option value="month">Last 30 Days</option>
+          <option value="quarter">Last 90 Days</option>
+          <option value="year">Last Year</option>
+        </select>
+        <select id="marketFilter">
+          <option value="all">All Markets</option>
+        </select>
+        <select id="salespersonFilter">
+          <option value="all">All Salespersons</option>
+        </select>
+      </div>
+      
+      <!-- Chart Type Buttons -->
+      <div class="btn-group">
+        <button id="salesTrendBtn" class="active">Sales Trend</button>
+        <button id="marketComparisonBtn">Market Comparison</button>
+        <button id="salesByPersonBtn">Sales by Person</button>
+      </div>
+      
+      <!-- Chart Container -->
+      <div class="chart-container">
+        <canvas id="salesChart"></canvas>
+      </div>
     </div>
 
     <!-- Upcoming Markets Section -->
@@ -269,55 +246,31 @@
         <input type="text" id="marketName" placeholder="Market Name" required>
         <input type="date" id="marketDate" required>
         
-        <!-- Time Selector Section -->
-        <div class="time-selector time-picker-container">
-          <input type="text" id="timeRange" placeholder="HH:MM - HH:MM" required readonly>
-          <button type="button" id="timePickerBtn">
-            <i class="fas fa-clock"></i> Select Time
-          </button>
-          
-          <!-- Time Picker -->
-          <div id="timePicker" class="time-picker">
-            <div class="time-picker-header">
-              <span id="pickerTitle">Start Time</span>
-              <span id="timePickerToggle">End Time ▶</span>
+        <div class="time-container">
+          <div class="time-inputs">
+            <div class="time-input">
+              <div class="time-label">Start</div>
+              <select id="startHour"></select>
+              <span>:</span>
+              <select id="startMinute"></select>
+              <select id="startPeriod">
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
             </div>
-            
-            <div class="time-selector-row">
-              <!-- Hours -->
-              <div class="time-part">
-                <div class="time-scroll">
-                  <button class="hour-up">▲</button>
-                  <div class="time-value hour-value">12</div>
-                  <button class="hour-down">▼</button>
-                </div>
-                <div class="time-label">Hour</div>
-              </div>
-              
-              <div class="time-part">
-                <div class="time-scroll">
-                  <button class="minute-up">▲</button>
-                  <div class="time-value minute-value">00</div>
-                  <button class="minute-down">▼</button>
-                </div>
-                <div class="time-label">Minute</div>
-              </div>
-              
-              <!-- AM/PM selector -->
-              <div class="time-part">
-                <div class="am-pm-toggle">
-                  <button type="button" class="am-pm-btn am-btn active">AM</button>
-                  <button type="button" class="am-pm-btn pm-btn">PM</button>
-                </div>
-                <div class="time-label">AM/PM</div>
-              </div>
-            </div>
-            
-            <div class="time-picker-footer">
-              <button type="button" class="cancel-btn">Cancel</button>
-              <button type="button" class="apply-btn">Apply</button>
+            <span class="time-separator">to</span>
+            <div class="time-input">
+              <div class="time-label">End</div>
+              <select id="endHour"></select>
+              <span>:</span>
+              <select id="endMinute"></select>
+              <select id="endPeriod">
+                <option value="AM">AM</option>
+                <option value="PM" selected>PM</option>
+              </select>
             </div>
           </div>
+          <input type="hidden" id="timeRange" name="timeRange">
         </div>
 
         <select id="salespersonSelect" required>
@@ -344,6 +297,14 @@
     document.addEventListener('DOMContentLoaded', () => {
       const marketHistory = JSON.parse(localStorage.getItem("marketHistory")) || [];
       const upcomingMarkets = JSON.parse(localStorage.getItem("upcomingMarkets")) || [];
+      let salesChart;
+
+      function formatDate(dateString) {
+        if (!dateString) return "";
+        const parts = dateString.split('-');
+        if (parts.length !== 3) return dateString;
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
 
       // Sales Performance Analysis
       const spSummary = marketHistory.reduce((acc, entry) => {
@@ -357,7 +318,6 @@
         return acc;
       }, {});
 
-      // Populate Sales Performance Table
       const salesPerformanceBody = document.querySelector('#salesPerformance tbody');
       Object.entries(spSummary).forEach(([sp, data]) => {
         const row = document.createElement('tr');
@@ -371,25 +331,161 @@
         salesPerformanceBody.appendChild(row);
       });
 
-      // Identify Strong Markets (Top 5 by sales)
-      const strongMarkets = [...marketHistory].sort((a, b) => b.totalSales - a.totalSales).slice(0, 5);
-      const topMarketsBody = document.querySelector('#topMarkets tbody');
-      strongMarkets.forEach(market => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${market.marketName}</td>
-          <td>${market.marketDate}</td>
-          <td>${market.totalBottles}</td>
-          <td>R${market.totalSales}</td>
-          <td>${market.marketSP || "Unknown"}</td>
-        `;
-        topMarketsBody.appendChild(row);
+      // Performance Overview Calculations
+      function updatePerformanceOverview(data) {
+        const totalSales = data.reduce((sum, entry) => sum + entry.totalSales, 0);
+        const totalBottles = data.reduce((sum, entry) => sum + entry.totalBottles, 0);
+        const bestMarket = data.reduce((max, entry) => 
+          entry.totalSales > (max.totalSales || 0) ? entry : max, {});
+        const spTotals = data.reduce((acc, entry) => {
+          acc[entry.marketSP] = (acc[entry.marketSP] || 0) + entry.totalSales;
+          return acc;
+        }, {});
+        const topSalesperson = Object.entries(spTotals).reduce((max, [sp, total]) => 
+          total > (max[1] || 0) ? [sp, total] : max, ["-", 0])[0];
+
+        document.getElementById('totalSales').textContent = `R${totalSales.toFixed(2)}`;
+        document.getElementById('totalBottles').textContent = totalBottles;
+        document.getElementById('bestMarket').textContent = bestMarket.marketName || '-';
+        document.getElementById('topSalesperson').textContent = topSalesperson;
+      }
+
+      // Populate Filters
+      const marketFilter = document.getElementById('marketFilter');
+      const salespersonFilter = document.getElementById('salespersonFilter');
+      const uniqueMarkets = [...new Set(marketHistory.map(entry => entry.marketName))];
+      const uniqueSPs = [...new Set(marketHistory.map(entry => entry.marketSP).filter(Boolean))];
+
+      uniqueMarkets.forEach(market => {
+        const option = document.createElement('option');
+        option.value = market;
+        option.textContent = market;
+        marketFilter.appendChild(option);
       });
 
-      // Populate Salesperson Dropdown
-      const salespersonList = [...new Set(marketHistory.map(entry => entry.marketSP).filter(Boolean))];
+      uniqueSPs.forEach(sp => {
+        const option = document.createElement('option');
+        option.value = sp;
+        option.textContent = sp;
+        salespersonFilter.appendChild(option);
+      });
+
+      // Chart Setup
+      const ctx = document.getElementById('salesChart').getContext('2d');
+      function updateChart(type, filteredData) {
+        if (salesChart) salesChart.destroy();
+
+        let config;
+        switch(type) {
+          case 'salesTrend':
+            config = {
+              type: 'line',
+              data: {
+                labels: filteredData.map(d => formatDate(d.marketDate)),
+                datasets: [{
+                  label: 'Sales Over Time',
+                  data: filteredData.map(d => d.totalSales),
+                  borderColor: '#4CAF50',
+                  fill: false
+                }]
+              },
+              options: { scales: { y: { beginAtZero: true } } }
+            };
+            break;
+          case 'marketComparison':
+            config = {
+              type: 'bar',
+              data: {
+                labels: uniqueMarkets,
+                datasets: [{
+                  label: 'Sales by Market',
+                  data: uniqueMarkets.map(m => 
+                    filteredData.filter(d => d.marketName === m)
+                      .reduce((sum, d) => sum + d.totalSales, 0)),
+                  backgroundColor: '#4CAF50'
+                }]
+              },
+              options: { scales: { y: { beginAtZero: true } } }
+            };
+            break;
+          case 'salesByPerson':
+            config = {
+              type: 'bar',
+              data: {
+                labels: uniqueSPs,
+                datasets: [{
+                  label: 'Sales by Person',
+                  data: uniqueSPs.map(sp => 
+                    filteredData.filter(d => d.marketSP === sp)
+                      .reduce((sum, d) => sum + d.totalSales, 0)),
+                  backgroundColor: '#4CAF50'
+                }]
+              },
+              options: { scales: { y: { beginAtZero: true } } }
+            };
+            break;
+        }
+        salesChart = new Chart(ctx, config);
+      }
+
+      // Filter Data
+      function filterData() {
+        let filtered = [...marketHistory];
+        const timeFilter = document.getElementById('timeFilter').value;
+        const marketFilterVal = document.getElementById('marketFilter').value;
+        const spFilterVal = document.getElementById('salespersonFilter').value;
+
+        const now = new Date();
+        if (timeFilter !== 'all') {
+          const days = { month: 30, quarter: 90, year: 365 }[timeFilter];
+          const cutoff = new Date(now - days * 24 * 60 * 60 * 1000);
+          filtered = filtered.filter(d => new Date(d.marketDate) >= cutoff);
+        }
+
+        if (marketFilterVal !== 'all') {
+          filtered = filtered.filter(d => d.marketName === marketFilterVal);
+        }
+        if (spFilterVal !== 'all') {
+          filtered = filtered.filter(d => d.marketSP === spFilterVal);
+        }
+
+        return filtered;
+      }
+
+      // Event Listeners for Filters and Buttons
+      const updateDashboard = () => {
+        const filteredData = filterData();
+        updatePerformanceOverview(filteredData);
+        const activeBtn = document.querySelector('.btn-group .active').id;
+        updateChart(activeBtn.replace('Btn', ''), filteredData);
+      };
+
+      document.getElementById('timeFilter').addEventListener('change', updateDashboard);
+      document.getElementById('marketFilter').addEventListener('change', updateDashboard);
+      document.getElementById('salespersonFilter').addEventListener('change', updateDashboard);
+
+      document.getElementById('salesTrendBtn').addEventListener('click', (e) => {
+        document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+        updateDashboard();
+      });
+      document.getElementById('marketComparisonBtn').addEventListener('click', (e) => {
+        document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+        updateDashboard();
+      });
+      document.getElementById('salesByPersonBtn').addEventListener('click', (e) => {
+        document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+        updateDashboard();
+      });
+
+      // Initial Chart Load
+      updateDashboard();
+
+      // Populate Salesperson Dropdown for Upcoming Markets
       const salespersonSelect = document.getElementById('salespersonSelect');
-      salespersonList.forEach(sp => {
+      uniqueSPs.forEach(sp => {
         const option = document.createElement('option');
         option.value = sp;
         option.textContent = sp;
@@ -397,171 +493,74 @@
       });
 
       // Time Picker Implementation
-      const timePickerBtn = document.getElementById('timePickerBtn');
-      const timePicker = document.getElementById('timePicker');
-      const timePickerToggle = document.getElementById('timePickerToggle');
-      const pickerTitle = document.getElementById('pickerTitle');
+      const startHour = document.getElementById('startHour');
+      const startMinute = document.getElementById('startMinute');
+      const startPeriod = document.getElementById('startPeriod');
+      const endHour = document.getElementById('endHour');
+      const endMinute = document.getElementById('endMinute');
+      const endPeriod = document.getElementById('endPeriod');
       const timeRangeInput = document.getElementById('timeRange');
-      const cancelBtn = document.querySelector('.cancel-btn');
-      const applyBtn = document.querySelector('.apply-btn');
-      
-      // Time parts
-      const hourValue = document.querySelector('.hour-value');
-      const minuteValue = document.querySelector('.minute-value');
-      const hourUp = document.querySelector('.hour-up');
-      const hourDown = document.querySelector('.hour-down');
-      const minuteUp = document.querySelector('.minute-up');
-      const minuteDown = document.querySelector('.minute-down');
-      const amBtn = document.querySelector('.am-btn');
-      const pmBtn = document.querySelector('.pm-btn');
-      
-      // State variables
-      let isPickingStartTime = true;
-      let startTime = { hour: 9, minute: 0, period: 'AM' };
-      let endTime = { hour: 5, minute: 0, period: 'PM' };
-      let currentTime = startTime;
-      
-      // Update displayed values
-      function updateTimeDisplay() {
-        hourValue.textContent = currentTime.hour.toString().padStart(2, '0');
-        minuteValue.textContent = currentTime.minute.toString().padStart(2, '0');
-        
-        if (currentTime.period === 'AM') {
-          amBtn.classList.add('active');
-          pmBtn.classList.remove('active');
-        } else {
-          pmBtn.classList.add('active');
-          amBtn.classList.remove('active');
-        }
+
+      for (let i = 1; i <= 12; i++) {
+        const hourOption = document.createElement('option');
+        hourOption.value = i;
+        hourOption.textContent = i.toString().padStart(2, '0');
+        startHour.appendChild(hourOption.cloneNode(true));
+        endHour.appendChild(hourOption);
       }
-      
-      // Set the time picker title
-      function updateTimePickerMode() {
-        if (isPickingStartTime) {
-          pickerTitle.textContent = 'Start Time';
-          timePickerToggle.textContent = 'End Time ▶';
-          currentTime = startTime;
-        } else {
-          pickerTitle.textContent = 'End Time';
-          timePickerToggle.textContent = '◀ Start Time';
-          currentTime = endTime;
-        }
-        updateTimeDisplay();
+      startHour.value = 9;
+      endHour.value = 5;
+
+      for (let i = 0; i < 60; i += 5) {
+        const minuteOption = document.createElement('option');
+        minuteOption.value = i;
+        minuteOption.textContent = i.toString().padStart(2, '0');
+        startMinute.appendChild(minuteOption.cloneNode(true));
+        endMinute.appendChild(minuteOption);
       }
-      
-      // Format time object to string
-      function formatTimeObject(timeObj) {
-        return `${timeObj.hour.toString().padStart(2, '0')}:${timeObj.minute.toString().padStart(2, '0')} ${timeObj.period}`;
-      }
-      
-      // Update the timeRange input
-      function updateTimeRangeInput() {
-        timeRangeInput.value = `${formatTimeObject(startTime)} - ${formatTimeObject(endTime)}`;
-      }
-      
-      // Convert to 24-hour format for storage
-      function convertTo24Hour(timeObj) {
-        let hour = timeObj.hour;
-        if (timeObj.period === 'PM' && hour < 12) {
-          hour += 12;
-        } else if (timeObj.period === 'AM' && hour === 12) {
-          hour = 0;
-        }
-        return `${hour.toString().padStart(2, '0')}:${timeObj.minute.toString().padStart(2, '0')}`;
-      }
-      
-      // Event Listeners
-      timePickerBtn.addEventListener('click', () => {
-        timePicker.classList.add('active');
-        updateTimePickerMode();
-      });
-      
-      timePickerToggle.addEventListener('click', () => {
-        isPickingStartTime = !isPickingStartTime;
-        updateTimePickerMode();
-      });
-      
-      // Hour adjustment
-      hourUp.addEventListener('click', () => {
-        currentTime.hour = (currentTime.hour % 12) + 1;
-        updateTimeDisplay();
-      });
-      
-      hourDown.addEventListener('click', () => {
-        currentTime.hour = currentTime.hour === 1 ? 12 : currentTime.hour - 1;
-        updateTimeDisplay();
-      });
-      
-      // Minute adjustment
-      minuteUp.addEventListener('click', () => {
-        currentTime.minute = (currentTime.minute + 5) % 60;
-        updateTimeDisplay();
-      });
-      
-      minuteDown.addEventListener('click', () => {
-        currentTime.minute = (currentTime.minute - 5 + 60) % 60;
-        updateTimeDisplay();
-      });
-      
-      // AM/PM toggle
-      amBtn.addEventListener('click', () => {
-        currentTime.period = 'AM';
-        updateTimeDisplay();
-      });
-      
-      pmBtn.addEventListener('click', () => {
-        currentTime.period = 'PM';
-        updateTimeDisplay();
-      });
-      
-      // Apply and Cancel buttons
-      applyBtn.addEventListener('click', () => {
-        updateTimeRangeInput();
-        timePicker.classList.remove('active');
-      });
-      
-      cancelBtn.addEventListener('click', () => {
-        timePicker.classList.remove('active');
-      });
-      
-      // Handle clicking outside to close
-      document.addEventListener('click', (event) => {
-        const isClickInside = timePicker.contains(event.target) || 
-                             timePickerBtn.contains(event.target);
-        
-        if (!isClickInside && timePicker.classList.contains('active')) {
-          timePicker.classList.remove('active');
-        }
-      });
-      
-      // Prevent closing when clicking inside
-      timePicker.addEventListener('click', (event) => {
-        event.stopPropagation();
+
+      const timeSelectors = [startHour, startMinute, startPeriod, endHour, endMinute, endPeriod];
+      timeSelectors.forEach(selector => {
+        selector.addEventListener('change', updateTimeRange);
       });
 
-      // Handle Upcoming Market Form Submission
+      function updateTimeRange() {
+        const formatTime = (hour, minute, period) => {
+          return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${period}`;
+        };
+        timeRangeInput.value = `${formatTime(startHour.value, startMinute.value, startPeriod.value)} - ${formatTime(endHour.value, endMinute.value, endPeriod.value)}`;
+      }
+      updateTimeRange();
+
+      function convertTo24Hour(hour, minute, period) {
+        hour = parseInt(hour);
+        if (period === 'PM' && hour < 12) hour += 12;
+        else if (period === 'AM' && hour === 12) hour = 0;
+        return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      }
+
+      // Upcoming Markets Form Submission
       document.getElementById('upcomingMarketForm').addEventListener('submit', (e) => {
         e.preventDefault();
-        
-        // Get and validate time range
-        const timeRangeValue = document.getElementById('timeRange').value;
-        if (!timeRangeValue) {
-          alert('Please select a time range');
-          return;
-        }
-        
-        // Create new market object
+        const marketDate = document.getElementById('marketDate').value;
         const newMarket = {
           name: document.getElementById('marketName').value,
-          date: document.getElementById('marketDate').value,
-          time: `${convertTo24Hour(startTime)} - ${convertTo24Hour(endTime)}`,
+          date: marketDate,
+          displayDate: formatDate(marketDate),
+          time: `${convertTo24Hour(startHour.value, startMinute.value, startPeriod.value)} - ${convertTo24Hour(endHour.value, endMinute.value, endPeriod.value)}`,
           sp: document.getElementById('salespersonSelect').value
         };
-
         upcomingMarkets.push(newMarket);
         localStorage.setItem('upcomingMarkets', JSON.stringify(upcomingMarkets));
         renderUpcomingMarkets();
         e.target.reset();
+        startHour.value = 9;
+        startMinute.value = 0;
+        startPeriod.value = "AM";
+        endHour.value = 5;
+        endMinute.value = 0;
+        endPeriod.value = "PM";
+        updateTimeRange();
       });
 
       function renderUpcomingMarkets() {
@@ -569,9 +568,10 @@
         tbody.innerHTML = '';
         upcomingMarkets.forEach((market, index) => {
           const row = document.createElement('tr');
+          const displayDate = market.displayDate || formatDate(market.date);
           row.innerHTML = `
             <td>${market.name}</td>
-            <td>${market.date}</td>
+            <td>${displayDate}</td>
             <td>${market.time}</td>
             <td>${market.sp}</td>
             <td>
