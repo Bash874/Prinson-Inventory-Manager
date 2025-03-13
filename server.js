@@ -2,98 +2,125 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
-const session = require('express-session'); // Import express-session
+const session = require('express-session');
+const { sequelize, Sale } = require('./models/Sales'); // Import Sequelize model
 const app = express();
-const port = process.env.PORT || 3000; // Use PORT from environment, fallback to 3000 for local testing
+const port = process.env.PORT || 3000;
 
+// Create PostgreSQL pool
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'prinson_inventory_manager',
+  password: process.env.DB_PASSWORD,
+  port: 5432,
+});
 
-// Middleware to parse incoming JSON data
+// Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-// Session middleware setup
 app.use(session({
-  secret: process.env.SESSION_SECRET,  // Use the session secret from the environment variable
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false }  // Set to true if you're using HTTPS
+  cookie: { secure: false }
 }));
 
+// Test Sequelize connection
+sequelize.authenticate()
+    .then(() => console.log('✅ Connected to PostgreSQL using Sequelize'))
+    .catch(err => console.error('❌ Unable to connect:', err));
 
-// Serve login page by default when visiting root
+// Sync Sequelize model
+sequelize.sync()
+    .then(() => console.log('✅ Sales table is ready'))
+    .catch(err => console.error('❌ Error creating table:', err));
+
+// Serve login page
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html')); // Login page
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// Route to home page after login (only accessible if logged in)
+// Protected Routes
 app.get('/home', (req, res) => {
   if (req.session.loggedIn) {
-    res.sendFile(path.join(__dirname, 'public', 'home.html')); // Home page
+    res.sendFile(path.join(__dirname, 'public', 'home.html'));
   } else {
-    res.redirect('/'); // Redirect to login if not logged in
+    res.redirect('/');
   }
 });
 
-// Route for sauce inventory tracker page (protected, needs login)
 app.get('/sauce-inventory-tracker', (req, res) => {
   if (req.session.loggedIn) {
-    res.sendFile(path.join(__dirname, 'public', 'sauce-inventory-tracker.html')); // Inventory page
+    res.sendFile(path.join(__dirname, 'public', 'sauce-inventory-tracker.html'));
   } else {
-    res.redirect('/'); // Redirect to login if not logged in
+    res.redirect('/');
   }
 });
 
-// Route to handle login
+// 🛒 **Route to Insert Sales Data**
+app.post('/api/sales', async (req, res) => {
+    try {
+        const { flavor, quantity, total_price, salesperson, market_name, market_date } = req.body;
+        const sale = await Sale.create({ flavor, quantity, total_price, salesperson, market_name, market_date });
+        res.json({ success: true, sale });
+    } catch (error) {
+        console.error('❌ Error saving sale:', error);
+        res.status(500).json({ success: false, error: 'Internal server error' });
+    }
+});
+
+// 📊 **Route to Retrieve All Sales for the Dashboard**
+app.get('/api/sales', async (req, res) => {
+    try {
+        const sales = await Sale.findAll({ order: [['sale_time', 'DESC']] });
+        res.json(sales);
+    } catch (error) {
+        console.error('❌ Error fetching sales:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// 🧑‍💻 **Login Route**
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
 
-  // Open SQLite database
-  const db = new sqlite3.Database('./data/database.db');
-
-  // Check if user exists in the database with the provided email
-  db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+  pool.query('SELECT * FROM users WHERE email = $1', [email], (err, result) => {
     if (err) {
       console.error(err);
       res.status(500).json({ success: false, message: 'Server error' });
       return;
     }
 
-    if (row) {
-      // User found, compare the hashed password
-      bcrypt.compare(password, row.password, (err, result) => {
+    if (result.rows.length > 0) {
+      const row = result.rows[0];
+      bcrypt.compare(password, row.password, (err, match) => {
         if (err) {
           console.error(err);
           res.status(500).json({ success: false, message: 'Server error' });
           return;
         }
 
-        if (result) {
-          // Passwords match, login successful
-          req.session.loggedIn = true; // Create session
-          req.session.userId = row.id; // Optionally store user ID in session
+        if (match) {
+          req.session.loggedIn = true;
+          req.session.userId = row.id;
           res.json({ success: true, message: 'Login successful' });
         } else {
-          // Passwords do not match
           res.json({ success: false, message: 'Invalid credentials' });
         }
       });
     } else {
-      // No user found with the provided email
       res.json({ success: false, message: 'Invalid credentials' });
     }
   });
-
-  // Close the database connection
-  db.close();
 });
 
-// Route to handle user registration
+// 📝 **User Registration**
 app.post('/register', (req, res) => {
   const { email, password, role } = req.body;
 
-  // Hash the password before storing it
   bcrypt.hash(password, 10, (err, hashedPassword) => {
     if (err) {
       console.error(err);
@@ -101,43 +128,34 @@ app.post('/register', (req, res) => {
       return;
     }
 
-    // Open SQLite database
-    const db = new sqlite3.Database('./data/database.db');
-
-    // Check if user with this email already exists
-    db.get('SELECT * FROM users WHERE email = ?', [email], (err, row) => {
+    pool.query('SELECT * FROM users WHERE email = $1', [email], (err, result) => {
       if (err) {
         console.error(err);
         res.status(500).json({ success: false, message: 'Server error' });
         return;
       }
 
-      if (row) {
-        // User already exists with this email
+      if (result.rows.length > 0) {
         res.json({ success: false, message: 'Email already in use' });
       } else {
-        // Insert new user with hashed password into the database
-        const stmt = db.prepare('INSERT INTO users (email, password, role) VALUES (?, ?, ?)');
-        stmt.run([email, hashedPassword, role], function(err) {
-          if (err) {
-            console.error(err);
-            res.status(500).json({ success: false, message: 'Server error' });
-          } else {
-            res.json({ success: true, message: 'User registered successfully' });
+        pool.query(
+          'INSERT INTO users (email, password, role) VALUES ($1, $2, $3)',
+          [email, hashedPassword, role],
+          (err, result) => {
+            if (err) {
+              console.error(err);
+              res.status(500).json({ success: false, message: 'Server error' });
+            } else {
+              res.json({ success: true, message: 'User registered successfully' });
+            }
           }
-        });
-
-        // Finalize the statement and close the database
-        stmt.finalize();
+        );
       }
     });
-
-    // Close the database connection
-    db.close();
   });
 });
 
-// Route to handle logout
+// 🚪 **Logout**
 app.post('/logout', (req, res) => {
   req.session.destroy((err) => {
     if (err) {
@@ -147,7 +165,7 @@ app.post('/logout', (req, res) => {
   });
 });
 
-// Start the server
+// 🚀 **Start Server**
 app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`✅ Server is running at http://localhost:${port}`);
 });

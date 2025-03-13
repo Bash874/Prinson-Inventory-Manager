@@ -1,4 +1,4 @@
-    const selectElement = document.getElementById("marketSP");
+const selectElement = document.getElementById("marketSP");
 
     selectElement.addEventListener("change", function() {
         // Check if the user selected a valid option
@@ -206,36 +206,83 @@ if (document.getElementById('peri-picante-btn')) {
   document.getElementById('peri-picante-btn').addEventListener('click', logPeriPicanteSale);
 }
 
-// Sales functions
+// ======================
+// Sales Functions
+// ======================
+
 function logSale(flavor) {
   if (inventory[flavor].stock < 1) {
     alert(`Error: Not enough stock for ${flavor}`);
     return;
   }
+
+  const sale = {
+    flavor: flavor,
+    quantity: 1,
+    total_price: inventory[flavor].price,
+    salesperson: document.getElementById("marketSP").value || "Unknown",
+    market_name: document.getElementById("marketName").value || "Unknown",
+    market_date: document.getElementById("marketDate").value || new Date().toISOString().split('T')[0]
+  };
+
+  // Update local state
   inventory[flavor].stock--;
-  salesLog.push({ flavor, quantity: 1, total_price: 95 });
+  salesLog.push(sale);
   updateDashboard();
   saveStateToLocalStorage();
-  alert(`Sale logged: ${flavor} - 1 bottle sold for R95`);
+  alert(`Sale logged: ${flavor} - 1 bottle sold for R${sale.total_price}`);
+
+  // Save to database
+  fetch('/api/sales', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(sale)
+  }).catch(error => console.error('Database error:', error));
 }
 
-// New function for logging Peri Picante sales
 function logPeriPicanteSale() {
-  // Add to sales log with the special price of R80
-  salesLog.push({ flavor: "Peri Picante", quantity: 1, total_price: 80 });
-  
-  // Increment the counter
-  periPicanteSold++;
-  
-  // Update UI and save state
+  const flavor = "Peri Picante";
+
+  // Sale details
+  const sale = {
+    flavor: flavor,
+    quantity: 1,
+    total_price: 80,
+    salesperson: document.getElementById("marketSP")?.value || "Unknown",
+    market_name: document.getElementById("marketName")?.value || "Unknown",
+    market_date: document.getElementById("marketDate")?.value || new Date().toISOString().split("T")[0]
+  };
+
+  // Log sale in frontend
+  salesLog.push(sale);
+
+  // Update Peri Picante sales count
+  if (sale.flavor === "Peri Picante") {
+    periPicanteSold += sale.quantity; // Increment the periPicanteSold variable
+  }
+
   updateDashboard();
   saveStateToLocalStorage();
+
+  // Show alert
   alert(`Sale logged: Peri Picante - 1 sold for R80`);
+
+  // Send to database
+  fetch("/api/sales", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(sale)
+  }).catch(error => console.error("Database error:", error));
 }
+
+// ======================
+// Other Functions
+// ======================
 
 function logPromotion() {
   const flavor1 = document.getElementById("promoFlavor1").value;
   const flavor2 = document.getElementById("promoFlavor2").value;
+
   if (flavor1 === flavor2) {
     if (inventory[flavor1].stock < 2) {
       alert(`Error: Need at least 2 bottles of ${flavor1}`);
@@ -250,20 +297,34 @@ function logPromotion() {
     inventory[flavor1].stock--;
     inventory[flavor2].stock--;
   }
-  salesLog.push({
+
+  const sale = {
     flavor: `${flavor1} & ${flavor2}`,
     quantity: 2,
-    total_price: 180
-  });
+    total_price: 180,
+    salesperson: document.getElementById("marketSP").value || "Unknown",
+    market_name: document.getElementById("marketName").value || "Unknown",
+    market_date: document.getElementById("marketDate").value || new Date().toISOString().split('T')[0]
+  };
+
+  salesLog.push(sale);
   twoBottlePromotionsSold++;
   updateDashboard();
   saveStateToLocalStorage();
   alert(`Promotion applied: ${flavor1} & ${flavor2} for R180`);
+
+  fetch('/api/sales', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(sale)
+  }).catch(error => console.error('Database error:', error));
 }
+
 
 function createGiftSet() {
   const flavor1 = document.getElementById("giftFlavor1").value;
   const flavor2 = document.getElementById("giftFlavor2").value;
+
   if (flavor1 === flavor2) {
     if (inventory[flavor1].stock < 2) {
       alert(`Error: Need at least 2 bottles of ${flavor1}`);
@@ -278,15 +339,30 @@ function createGiftSet() {
     inventory[flavor1].stock--;
     inventory[flavor2].stock--;
   }
-  salesLog.push({
+
+  const sale = {
     flavor: `${flavor1} & ${flavor2}`,
     quantity: 2,
-    total_price: 190
-  });
+    total_price: 190,
+    salesperson: document.getElementById("marketSP").value || "Unknown",
+    market_name: document.getElementById("marketName").value || "Unknown",
+    market_date: document.getElementById("marketDate").value || new Date().toISOString().split('T')[0]
+  };
+
+  // Update local state
+  salesLog.push(sale);
   giftSetsSold++;
   updateDashboard();
   saveStateToLocalStorage();
   alert(`Gift set created: ${flavor1} & ${flavor2} for R190`);
+
+  // Save to database
+  fetch('/api/sales', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(sale)
+  })
+  .catch(error => console.error('Database error:', error));
 }
 
 function createPrepackedGiftSet(flavor1, flavor2) {
@@ -304,15 +380,30 @@ function createPrepackedGiftSet(flavor1, flavor2) {
     inventory[flavor1].stock--;
     inventory[flavor2].stock--;
   }
-  salesLog.push({
+
+  const sale = {
     flavor: `${flavor1} & ${flavor2}`,
     quantity: 2,
-    total_price: 190
-  });
+    total_price: 190,
+    salesperson: document.getElementById("marketSP").value || "Unknown",
+    market_name: document.getElementById("marketName").value || "Unknown",
+    market_date: document.getElementById("marketDate").value || new Date().toISOString().split('T')[0]
+  };
+
+  // Update local state
+  salesLog.push(sale);
   giftSetsSold++;
   updateDashboard();
   saveStateToLocalStorage();
   alert(`Gift set created: ${flavor1} & ${flavor2} for R190`);
+
+  // Save to database
+  fetch('/api/sales', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(sale)
+  })
+  .catch(error => console.error('Database error:', error));
 }
 
 // Generate PDF report
@@ -420,3 +511,4 @@ function voidLastTransaction() {
 
 // Initial dashboard update
 updateDashboard();
+

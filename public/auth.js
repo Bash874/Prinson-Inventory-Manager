@@ -7,7 +7,7 @@ function toggleForms() {
 }
 
 // Register User
-async function registerUser() {
+  async function registerUser() {
   const email = document.getElementById("registerEmail").value;
   const password = document.getElementById("registerPassword").value;
   const role = document.getElementById("userRole").value;
